@@ -16,7 +16,7 @@
   <widget class="QPushButton" name="btnRun">
    <property name="geometry">
     <rect>
-     <x>110</x>
+     <x>20</x>
      <y>270</y>
      <width>281</width>
      <height>28</height>
@@ -24,6 +24,19 @@
    </property>
    <property name="text">
     <string>執行</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="btnHelp">
+   <property name="geometry">
+    <rect>
+     <x>420</x>
+     <y>270</y>
+     <width>93</width>
+     <height>28</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>設定說明</string>
    </property>
   </widget>
   <widget class="QWidget" name="">

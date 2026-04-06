@@ -192,14 +192,68 @@ class MemoModel:
             self.first_start = False
             self.dlg = MemoModelDialog()
             
-            # 【修正1】：把綁定按鈕移到這個區塊內，避免重複開啟外掛時重複綁定
+            # 【按鈕綁定區】
+            # 將介面上的 btnRun 按鈕，綁定到 calculate_memo 函數 (執行模擬)
             self.dlg.btnRun.clicked.connect(self.calculate_memo)
+            
+            # 將介面上的 btnHelp 按鈕，綁定到 show_help 函數 (顯示說明書)
+            # ⚠️ 注意：請確保你在 Qt Designer 裡有新增這個按鈕，並且命名為 btnHelp
+            self.dlg.btnHelp.clicked.connect(self.show_help)
 
-        # 3. 顯示對話框
+        # 2. 顯示對話框
         self.dlg.show()
         result = self.dlg.exec_()
         if result:
             pass
+
+    def show_help(self):
+        """讀取並在具備捲軸的視窗中顯示 help.txt 說明檔"""
+        import os
+        from qgis.PyQt.QtWidgets import QMessageBox, QDialog, QVBoxLayout, QTextEdit, QPushButton
+        from qgis.PyQt.QtGui import QFont
+        
+        # 取得目前這個 Python 檔案所在的資料夾路徑，並尋找 help.txt
+        plugin_dir = os.path.dirname(__file__)
+        help_path = os.path.join(plugin_dir, 'help.txt')
+        
+        try:
+            # 讀取文字檔 (強制使用 utf-8 避免中文亂碼)
+            with open(help_path, 'r', encoding='utf-8') as f:
+                help_text = f.read()
+                
+            # ===============================================
+            # 建立專業的獨立捲軸視窗 (QDialog)
+            # ===============================================
+            help_dialog = QDialog(self.dlg)
+            help_dialog.setWindowTitle("MEMO 參數設定與操作說明")
+            help_dialog.resize(600, 500)  # 設定視窗預設大小 (寬 600, 高 500)
+            
+            # 建立垂直排版配置 (讓文字在上面，按鈕在下面)
+            layout = QVBoxLayout()
+            
+            # 建立文字顯示區 (具備自動捲軸功能)
+            text_box = QTextEdit()
+            text_box.setReadOnly(True)  # 設定為唯讀，避免使用者不小心改到文字
+            text_box.setPlainText(help_text)
+            
+            # (加分項) 設定字體微調，讓 txt 的排版更整齊易讀
+            font = QFont("Microsoft JhengHei", 10) # 使用微軟正黑體，大小 10
+            text_box.setFont(font)
+            
+            # 建立一個大大的「關閉」按鈕
+            btn_close = QPushButton("關閉說明")
+            btn_close.clicked.connect(help_dialog.accept)
+            
+            # 將文字區和按鈕依序放入排版配置中
+            layout.addWidget(text_box)
+            layout.addWidget(btn_close)
+            help_dialog.setLayout(layout)
+            
+            # 顯示這個華麗的新視窗！
+            help_dialog.exec_()
+            
+        except Exception as e:
+            QMessageBox.warning(self.dlg, "找不到說明檔", f"無法開啟說明文件！\n請確認 help.txt 是否放在外掛資料夾中。\n錯誤訊息：{e}")
             
 
     def calculate_memo(self):
