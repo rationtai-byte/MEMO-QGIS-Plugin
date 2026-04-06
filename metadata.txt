@@ -1,0 +1,25 @@
+[general]
+name=MEMO Groundwater Network Design
+qgisMinimumVersion=3.0
+description=用於評估地下水監測井網路效率與視覺化盲區的專業套件。
+version=1.0
+author=RayTai
+email=rationtai@gmail.com
+
+about=本套件基於 Domenico 傳輸方程式，專為環境工程與地下水污染場址評估設計。
+ 核心功能包含：
+ 1. 自動計算潛在污染源網格點與監測井攔截效率。
+ 2. 支援自訂水文地質參數與地下水流向角度設定。
+ 3. 自動生成流向箭頭、視覺化紅綠偵測點位。
+ 4. 自動繪製「未偵測盲區多邊形」並精算盲區總面積。
+ 5. 一鍵匯出中英雙語模擬參數與結果摘要報告。
+ 適用於各類土壤及地下水污染調查、整治專案與計畫書撰寫之科學佐證。
+
+tracker=
+repository=
+tags=groundwater, monitoring, domenico, environment, pollution, plume
+homepage=
+category=Plugins
+icon=icon.png
+experimental=False
+deprecated=False

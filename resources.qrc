@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/plugins/MemoModel" >
+        <file>icon.png</file>
+    </qresource>
+</RCC>
