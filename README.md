@@ -15,4 +15,4 @@ This tool evaluates the monitoring efficiency of groundwater well networks based
 Designed for practical applications in soil and groundwater pollution investigations, such as optimizing well placements in industrial parks or generating scientifically backed efficiency reports for regulatory compliance.
 
 ## 👨‍💻 Author
-Developed by **RayTai** ```
+Developed by **RayTai** 
