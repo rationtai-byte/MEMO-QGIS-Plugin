@@ -225,7 +225,8 @@ class MemoModel:
             # 建立專業的獨立捲軸視窗 (QDialog)
             # ===============================================
             help_dialog = QDialog(self.dlg)
-            help_dialog.setWindowTitle("MEMO 參數設定與操作說明")
+            # 【更新】雙語視窗標題
+            help_dialog.setWindowTitle("MEMO 參數設定與操作說明 / Parameters & Operation Guide")
             help_dialog.resize(600, 500)  # 設定視窗預設大小 (寬 600, 高 500)
             
             # 建立垂直排版配置 (讓文字在上面，按鈕在下面)
@@ -240,8 +241,8 @@ class MemoModel:
             font = QFont("Microsoft JhengHei", 10) # 使用微軟正黑體，大小 10
             text_box.setFont(font)
             
-            # 建立一個大大的「關閉」按鈕
-            btn_close = QPushButton("關閉說明")
+            # 【更新】大大的雙語「關閉」按鈕
+            btn_close = QPushButton("關閉說明 / Close Help")
             btn_close.clicked.connect(help_dialog.accept)
             
             # 將文字區和按鈕依序放入排版配置中
@@ -253,7 +254,11 @@ class MemoModel:
             help_dialog.exec_()
             
         except Exception as e:
-            QMessageBox.warning(self.dlg, "找不到說明檔", f"無法開啟說明文件！\n請確認 help.txt 是否放在外掛資料夾中。\n錯誤訊息：{e}")
+            # 【更新】雙語錯誤提示
+            error_msg = f"無法開啟說明文件！請確認 help.txt 是否放在外掛資料夾中。\n" \
+                        f"Cannot open the help file! Please ensure help.txt is in the plugin folder.\n\n" \
+                        f"錯誤訊息 / Error: {e}"
+            QMessageBox.warning(self.dlg, "找不到說明檔 / Help File Not Found", error_msg)
             
 
     def calculate_memo(self):
@@ -273,24 +278,34 @@ class MemoModel:
         well_layer = self.dlg.combo_WellLayer.currentLayer()
         
         if not source_layer or not well_layer:
-            QMessageBox.warning(self.dlg, "錯誤", "請確保已正確選擇「污染源」與「監測井」圖層！")
+            # 雙語錯誤提示
+            QMessageBox.warning(self.dlg, "錯誤 / Error", "請確保已正確選擇「污染源」與「監測井」圖層！\nPlease ensure both 'Source Layer' and 'Well Layer' are selected correctly!")
+            return
+
+        # 【新增】污染源圖層防呆：必須是多邊形 (Polygon)
+        if source_layer.geometryType() != QgsWkbTypes.PolygonGeometry:
+            QMessageBox.warning(self.dlg, "圖層錯誤 / Layer Error", "「污染源圖層」必須是多邊形 (Polygon) 圖層！\nThe 'Source Layer' must be a Polygon geometry layer!")
             return
 
         if well_layer.geometryType() != QgsWkbTypes.PointGeometry:
-            QMessageBox.warning(self.dlg, "圖層選錯啦", "「監測井圖層」必須是點 (Point) 圖層！")
+            # 雙語錯誤提示
+            QMessageBox.warning(self.dlg, "圖層錯誤 / Layer Error", "「監測井圖層」必須是點 (Point) 圖層！\nThe 'Well Layer' must be a Point geometry layer!")
             return
 
         well_points = [f.geometry().asPoint() for f in well_layer.getFeatures()]
         if not well_points:
-            QMessageBox.warning(self.dlg, "錯誤", "選定的監測井圖層中沒有點位資料！")
+            # 雙語錯誤提示
+            QMessageBox.warning(self.dlg, "錯誤 / Error", "選定的監測井圖層中沒有點位資料！\nNo point data found in the selected Well Layer!")
             return
 
         source_crs = source_layer.crs()
         if source_crs.isGeographic():
-            QMessageBox.critical(self.dlg, "座標系統錯誤", "請使用投影座標系 (例如 TWD97 EPSG:3826)！")
+            # 雙語錯誤提示
+            QMessageBox.critical(self.dlg, "座標系統錯誤 / CRS Error", "請使用投影座標系 (例如 TWD97 EPSG:3826)！\nPlease use a Projected Coordinate System (e.g., TWD97 EPSG:3826)!")
             return
         if source_crs.mapUnits() != QgsUnitTypes.DistanceMeters:
-            QMessageBox.critical(self.dlg, "單位錯誤", "該圖層的座標單位不是「公尺」！")
+            # 雙語錯誤提示
+            QMessageBox.critical(self.dlg, "單位錯誤 / Unit Error", "該圖層的座標單位不是「公尺」！\nThe layer's coordinate unit must be 'Meters'!")
             return
 
         # 2. 動態讀取參數 (包含全新的動態網格尺寸)
@@ -305,12 +320,11 @@ class MemoModel:
             angle_rad = math.radians(angle_deg)
             cos_a, sin_a = math.cos(angle_rad), math.sin(angle_rad)
             
-            # 【新增】動態讀取網格尺寸
+            # 動態讀取網格尺寸
             grid_spacing = self.dlg.spin_GridSize.value()
         except AttributeError as e:
             # 防呆機制：如果找不到 spin_GridSize，就自動用 25 公尺，並印出提示
-            # 這樣不會因為 UI 沒設定好就當機
-            print(f"UI 讀取警告：{e}。將使用預設網格間距 25m。")
+            print(f"UI Warning: {e}. Defaulting grid size to 25m. / UI 讀取警告：將使用預設網格間距 25m。")
             grid_spacing = 25.0
 
         Dx = l_disp * v
@@ -327,7 +341,7 @@ class MemoModel:
             except: return 0.0
 
         # 4. 執行模擬運算
-        half_grid = grid_spacing / 2.0  # 【修正】根據使用者定義的網格動態計算多邊形半徑
+        half_grid = grid_spacing / 2.0  
         total_points, detected_count = 0, 0
         result_features, missed_polygons = [], [] 
 
@@ -350,7 +364,7 @@ class MemoModel:
                             detected_count += 1; feat.setAttributes(["Detected"])
                         else:
                             feat.setAttributes(["Missed"])
-                            # 【修正】使用動態半徑畫盲區正方形
+                            # 使用動態半徑畫盲區正方形
                             rect = QgsRectangle(x_src - half_grid, y_src - half_grid, x_src + half_grid, y_src + half_grid)
                             missed_polygons.append(QgsGeometry.fromRect(rect))
                         result_features.append(feat)
@@ -412,11 +426,18 @@ class MemoModel:
             layers_to_export.append(res_layer)
 
             # 6. 彈出演示視窗並詢問是否保存
-            msg = f"模擬完成！\n網格尺寸: {grid_spacing}m x {grid_spacing}m\n監測效率: {efficiency:.1f}%\n盲區面積: {blind_area_sqm:,.1f} m2\n\n是否確定要將此次模擬結果匯出成 GPKG 專案包與參數報告？"
-            if QMessageBox.question(self.dlg, "模擬成功", msg, QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+            # 雙語成功提示與參數報表對話框
+            msg = f"模擬完成！ / Simulation Complete!\n\n" \
+                  f"網格尺寸 / Grid Size: {grid_spacing}m x {grid_spacing}m\n" \
+                  f"監測效率 / Monitoring Efficiency: {efficiency:.1f}%\n" \
+                  f"盲區面積 / Blind Area: {blind_area_sqm:,.1f} m2\n\n" \
+                  f"是否確定要將此次模擬結果匯出成 GPKG 專案包與參數報告？\n" \
+                  f"Export results as a GPKG project and parameter report?"
+            
+            if QMessageBox.question(self.dlg, "模擬成功 / Success", msg, QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
                 
                 # 7. 一鍵匯出流程
-                file_path, _ = QFileDialog.getSaveFileName(self.dlg, "匯出專案包", "MEMO_Simulation_Project.gpkg", "GeoPackage (*.gpkg)")
+                file_path, _ = QFileDialog.getSaveFileName(self.dlg, "匯出專案包 / Export Project", "MEMO_Simulation_Project.gpkg", "GeoPackage (*.gpkg)")
                 if file_path:
                     try:
                         save_options = QgsVectorFileWriter.SaveVectorOptions()
@@ -434,7 +455,7 @@ class MemoModel:
                             qml_path = os.path.join(os.path.dirname(file_path), f"{lyr.name()}.qml")
                             lyr.saveNamedStyle(qml_path)
 
-                        # 產出更新版的雙語報告
+                        # 產出雙語報告
                         report_path = os.path.splitext(file_path)[0] + "_Summary.txt"
                         with open(report_path, 'w', encoding='utf-8') as f:
                             f.write("=========================================================\n")
@@ -442,7 +463,7 @@ class MemoModel:
                             f.write("=========================================================\n\n")
 
                             f.write("[ 模擬參數 / Simulation Parameters ]\n")
-                            f.write(f"- 網格解析度 / Grid Size : {grid_spacing} m\n") # 【新增】記錄網格大小
+                            f.write(f"- 網格解析度 / Grid Size : {grid_spacing} m\n") 
                             f.write(f"- 地下水流向角度 / Groundwater Flow Angle : {angle_deg} °\n")
                             f.write(f"- 縱向擴散係數 / Longitudinal Dispersivity (L_disp) : {l_disp} m\n")
                             f.write(f"- 橫向擴散係數 / Transverse Dispersivity (T_disp) : {t_disp} m\n")
@@ -457,8 +478,16 @@ class MemoModel:
                             f.write(f"- 監測效率 / Monitoring Efficiency : {efficiency:.1f} %\n")
                             f.write(f"- 盲區總面積 / Total Blind Area : {blind_area_sqm:,.1f} sq. meters\n")
 
-                        QMessageBox.information(self.dlg, "匯出完成", f"已成功保存：\n1. GPKG 空間資料庫\n2. QML 樣式檔\n3. 雙語摘要報告 (.txt)\n\n檔案已存至：{os.path.dirname(file_path)}")
+                        # 雙語匯出成功提示
+                        success_msg = f"已成功保存 / Successfully saved:\n" \
+                                      f"1. GPKG 空間資料庫 (Spatial Database)\n" \
+                                      f"2. QML 樣式檔 (Style Files)\n" \
+                                      f"3. 雙語摘要報告 (Bilingual Summary Report .txt)\n\n" \
+                                      f"檔案已存至 / Saved to:\n{os.path.dirname(file_path)}"
+                        QMessageBox.information(self.dlg, "匯出完成 / Export Complete", success_msg)
                     except Exception as e:
-                        QMessageBox.critical(self.dlg, "匯出失敗", f"發生不可預期的錯誤：{e}")
+                        # 雙語匯出失敗提示
+                        QMessageBox.critical(self.dlg, "匯出失敗 / Export Failed", f"發生不可預期的錯誤 / Unexpected error occurred:\n{e}")
         else:
-            QMessageBox.warning(self.dlg, "無效的網格", "未產生任何網格點，請檢查圖層與範圍！")
+            # 雙語無效網格提示
+            QMessageBox.warning(self.dlg, "無效的網格 / Invalid Grid", "未產生任何網格點，請檢查圖層與範圍！\nNo grid points generated. Please check layers and extents!")

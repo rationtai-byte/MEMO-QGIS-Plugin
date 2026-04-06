@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>529</width>
+    <width>587</width>
     <height>316</height>
    </rect>
   </property>
@@ -18,33 +18,71 @@
     <rect>
      <x>20</x>
      <y>270</y>
-     <width>281</width>
+     <width>441</width>
      <height>28</height>
     </rect>
    </property>
    <property name="text">
-    <string>執行</string>
+    <string>執行 Run</string>
    </property>
   </widget>
   <widget class="QPushButton" name="btnHelp">
    <property name="geometry">
     <rect>
-     <x>420</x>
+     <x>480</x>
      <y>270</y>
      <width>93</width>
      <height>28</height>
     </rect>
    </property>
    <property name="text">
-    <string>設定說明</string>
+    <string>說明 Help</string>
    </property>
+  </widget>
+  <widget class="QWidget" name="">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>10</y>
+     <width>201</width>
+     <height>111</height>
+    </rect>
+   </property>
+   <layout class="QGridLayout" name="gridLayout_2">
+    <item row="1" column="0">
+     <widget class="QgsMapLayerComboBox" name="combo_SourceLayer"/>
+    </item>
+    <item row="0" column="0">
+     <widget class="QLabel" name="label_7">
+      <property name="text">
+       <string>污染源區 Source Area</string>
+      </property>
+      <property name="textFormat">
+       <enum>Qt::RichText</enum>
+      </property>
+     </widget>
+    </item>
+    <item row="4" column="0">
+     <widget class="QgsMapLayerComboBox" name="combo_WellLayer"/>
+    </item>
+    <item row="2" column="0">
+     <widget class="QLabel" name="label_8">
+      <property name="text">
+       <string>監測井 Well Layer</string>
+      </property>
+      <property name="textFormat">
+       <enum>Qt::RichText</enum>
+      </property>
+     </widget>
+    </item>
+   </layout>
   </widget>
   <widget class="QWidget" name="">
    <property name="geometry">
     <rect>
      <x>250</x>
      <y>10</y>
-     <width>164</width>
+     <width>208</width>
      <height>241</height>
     </rect>
    </property>
@@ -52,7 +90,7 @@
     <item row="0" column="0">
      <widget class="QLabel" name="label_10">
       <property name="text">
-       <string>網格間距 (m)</string>
+       <string>網格間距 Grid Size (m)</string>
       </property>
       <property name="textFormat">
        <enum>Qt::RichText</enum>
@@ -62,7 +100,7 @@
     <item row="1" column="0">
      <widget class="QLabel" name="label">
       <property name="text">
-       <string>縱向擴散係數 (L&lt;sub&gt;disp&lt;/sub&gt;, m)</string>
+       <string>縱向擴散 Long. Disp. (L_disp, m)</string>
       </property>
       <property name="textFormat">
        <enum>Qt::RichText</enum>
@@ -72,7 +110,7 @@
     <item row="2" column="0">
      <widget class="QLabel" name="label_2">
       <property name="text">
-       <string>橫向擴散係數 (T&lt;sub&gt;disp&lt;/sub&gt;, m)</string>
+       <string>橫向擴散 Trans. Disp. (T_disp, m)</string>
       </property>
       <property name="textFormat">
        <enum>Qt::RichText</enum>
@@ -82,7 +120,7 @@
     <item row="3" column="0">
      <widget class="QLabel" name="label_3">
       <property name="text">
-       <string>平均污染流速 (v, m/day)</string>
+       <string>平均流速 Velocity (v, m/day))</string>
       </property>
       <property name="textFormat">
        <enum>Qt::RichText</enum>
@@ -92,7 +130,7 @@
     <item row="4" column="0">
      <widget class="QLabel" name="label_4">
       <property name="text">
-       <string>污染源寬度 (Y, m)</string>
+       <string>污染源寬度 Source Width (Y, m))</string>
       </property>
       <property name="textFormat">
        <enum>Qt::RichText</enum>
@@ -102,7 +140,7 @@
     <item row="5" column="0">
      <widget class="QLabel" name="label_5">
       <property name="text">
-       <string>模擬時間 (t, days)</string>
+       <string>模擬時間 Time (t, days)</string>
       </property>
       <property name="textFormat">
        <enum>Qt::RichText</enum>
@@ -112,7 +150,7 @@
     <item row="6" column="0">
      <widget class="QLabel" name="label_6">
       <property name="text">
-       <string>稀釋等高線 (C&lt;sub&gt;dil&lt;/sub&gt;, 無單位)</string>
+       <string>稀釋標準 Dilution Limit (C_dil)</string>
       </property>
       <property name="textFormat">
        <enum>Qt::RichText</enum>
@@ -122,7 +160,7 @@
     <item row="7" column="0">
      <widget class="QLabel" name="label_9">
       <property name="text">
-       <string>地下水流向角度 (度)</string>
+       <string>流向角度 Flow Angle (deg)</string>
       </property>
      </widget>
     </item>
@@ -131,7 +169,7 @@
   <widget class="QWidget" name="">
    <property name="geometry">
     <rect>
-     <x>421</x>
+     <x>480</x>
      <y>10</y>
      <width>95</width>
      <height>243</height>
@@ -203,44 +241,6 @@
      <widget class="QDoubleSpinBox" name="spin_Angle">
       <property name="maximum">
        <double>360.000000000000000</double>
-      </property>
-     </widget>
-    </item>
-   </layout>
-  </widget>
-  <widget class="QWidget" name="">
-   <property name="geometry">
-    <rect>
-     <x>10</x>
-     <y>10</y>
-     <width>201</width>
-     <height>111</height>
-    </rect>
-   </property>
-   <layout class="QGridLayout" name="gridLayout_2">
-    <item row="1" column="0">
-     <widget class="QgsMapLayerComboBox" name="combo_SourceLayer"/>
-    </item>
-    <item row="0" column="0">
-     <widget class="QLabel" name="label_7">
-      <property name="text">
-       <string>污染源區</string>
-      </property>
-      <property name="textFormat">
-       <enum>Qt::RichText</enum>
-      </property>
-     </widget>
-    </item>
-    <item row="4" column="0">
-     <widget class="QgsMapLayerComboBox" name="combo_WellLayer"/>
-    </item>
-    <item row="2" column="0">
-     <widget class="QLabel" name="label_8">
-      <property name="text">
-       <string>監測井</string>
-      </property>
-      <property name="textFormat">
-       <enum>Qt::RichText</enum>
       </property>
      </widget>
     </item>
