@@ -165,9 +165,11 @@ class MemoModel:
 
         # 【偷吃步寫法】直接讓程式抓取外掛資料夾底下的 icon.png
         icon_path = os.path.join(os.path.dirname(__file__), 'icon.png')
+        
+        # 建立外掛按鈕與選單行為
         self.add_action(
             icon_path,
-            text=self.tr(u''),
+            text=self.tr(u'執行 MEMO 評估模組 / Run MEMO'),
             callback=self.run,
             parent=self.iface.mainWindow())
 
@@ -207,7 +209,7 @@ class MemoModel:
             pass
 
     def show_help(self):
-        """讀取並在具備捲軸的視窗中顯示 help.txt 說明檔"""
+        """讀取並在具備捲軸的視窗中顯示 help.txt 說明檔 (非強制回應視窗)"""
         import os
         from qgis.PyQt.QtWidgets import QMessageBox, QDialog, QVBoxLayout, QTextEdit, QPushButton
         from qgis.PyQt.QtGui import QFont
@@ -222,39 +224,48 @@ class MemoModel:
                 help_text = f.read()
                 
             # ===============================================
-            # 建立專業的獨立捲軸視窗 (QDialog)
+            # 【關鍵升級 1】：防止重複開窗與記憶體閃退機制
+            # 檢查 self.help_dialog 是否已經存在，若無則建立
             # ===============================================
-            help_dialog = QDialog(self.dlg)
-            # 【更新】雙語視窗標題
-            help_dialog.setWindowTitle("MEMO 參數設定與操作說明 / Parameters & Operation Guide")
-            help_dialog.resize(600, 500)  # 設定視窗預設大小 (寬 600, 高 500)
+            if not hasattr(self, 'help_dialog'):
+                self.help_dialog = QDialog(self.dlg)
+                self.help_dialog.setWindowTitle("MEMO 參數設定與操作說明 / Parameters & Operation Guide")
+                self.help_dialog.resize(600, 500)  # 設定視窗預設大小 (寬 600, 高 500)
+                
+                # 建立垂直排版配置
+                layout = QVBoxLayout()
+                
+                # 建立文字顯示區 (具備自動捲軸功能)
+                self.text_box = QTextEdit()
+                self.text_box.setReadOnly(True)  
+                
+                # 設定字體微調，讓 txt 的排版更整齊易讀
+                font = QFont("Microsoft JhengHei", 10) 
+                self.text_box.setFont(font)
+                
+                # 建立大大的「關閉」按鈕
+                btn_close = QPushButton("關閉說明 / Close Help")
+                btn_close.clicked.connect(self.help_dialog.accept)
+                
+                # 將文字區和按鈕依序放入排版配置中
+                layout.addWidget(self.text_box)
+                layout.addWidget(btn_close)
+                self.help_dialog.setLayout(layout)
             
-            # 建立垂直排版配置 (讓文字在上面，按鈕在下面)
-            layout = QVBoxLayout()
+            # 每次點擊都重新載入最新文字 (這樣你修改 help.txt 就不用重開 QGIS)
+            self.text_box.setPlainText(help_text)
             
-            # 建立文字顯示區 (具備自動捲軸功能)
-            text_box = QTextEdit()
-            text_box.setReadOnly(True)  # 設定為唯讀，避免使用者不小心改到文字
-            text_box.setPlainText(help_text)
+            # ===============================================
+            # 【關鍵升級 2】：非強制回應顯示 (Non-modal)
+            # 使用 .show() 代替 .exec_()，讓主視窗保持可操作狀態
+            # ===============================================
+            self.help_dialog.show()
             
-            # (加分項) 設定字體微調，讓 txt 的排版更整齊易讀
-            font = QFont("Microsoft JhengHei", 10) # 使用微軟正黑體，大小 10
-            text_box.setFont(font)
-            
-            # 【更新】大大的雙語「關閉」按鈕
-            btn_close = QPushButton("關閉說明 / Close Help")
-            btn_close.clicked.connect(help_dialog.accept)
-            
-            # 將文字區和按鈕依序放入排版配置中
-            layout.addWidget(text_box)
-            layout.addWidget(btn_close)
-            help_dialog.setLayout(layout)
-            
-            # 顯示這個華麗的新視窗！
-            help_dialog.exec_()
+            # 確保視窗跳到最上層，不會被其他視窗擋住
+            self.help_dialog.raise_()
+            self.help_dialog.activateWindow()
             
         except Exception as e:
-            # 【更新】雙語錯誤提示
             error_msg = f"無法開啟說明文件！請確認 help.txt 是否放在外掛資料夾中。\n" \
                         f"Cannot open the help file! Please ensure help.txt is in the plugin folder.\n\n" \
                         f"錯誤訊息 / Error: {e}"
@@ -278,37 +289,31 @@ class MemoModel:
         well_layer = self.dlg.combo_WellLayer.currentLayer()
         
         if not source_layer or not well_layer:
-            # 雙語錯誤提示
             QMessageBox.warning(self.dlg, "錯誤 / Error", "請確保已正確選擇「污染源」與「監測井」圖層！\nPlease ensure both 'Source Layer' and 'Well Layer' are selected correctly!")
             return
 
-        # 【新增】污染源圖層防呆：必須是多邊形 (Polygon)
         if source_layer.geometryType() != QgsWkbTypes.PolygonGeometry:
             QMessageBox.warning(self.dlg, "圖層錯誤 / Layer Error", "「污染源圖層」必須是多邊形 (Polygon) 圖層！\nThe 'Source Layer' must be a Polygon geometry layer!")
             return
 
         if well_layer.geometryType() != QgsWkbTypes.PointGeometry:
-            # 雙語錯誤提示
             QMessageBox.warning(self.dlg, "圖層錯誤 / Layer Error", "「監測井圖層」必須是點 (Point) 圖層！\nThe 'Well Layer' must be a Point geometry layer!")
             return
 
         well_points = [f.geometry().asPoint() for f in well_layer.getFeatures()]
         if not well_points:
-            # 雙語錯誤提示
             QMessageBox.warning(self.dlg, "錯誤 / Error", "選定的監測井圖層中沒有點位資料！\nNo point data found in the selected Well Layer!")
             return
 
         source_crs = source_layer.crs()
         if source_crs.isGeographic():
-            # 雙語錯誤提示
             QMessageBox.critical(self.dlg, "座標系統錯誤 / CRS Error", "請使用投影座標系 (例如 TWD97 EPSG:3826)！\nPlease use a Projected Coordinate System (e.g., TWD97 EPSG:3826)!")
             return
         if source_crs.mapUnits() != QgsUnitTypes.DistanceMeters:
-            # 雙語錯誤提示
             QMessageBox.critical(self.dlg, "單位錯誤 / Unit Error", "該圖層的座標單位不是「公尺」！\nThe layer's coordinate unit must be 'Meters'!")
             return
 
-        # 2. 動態讀取參數 (包含全新的動態網格尺寸)
+        # 2. 動態讀取參數 (加入衰減與分子擴散參數)
         try:
             l_disp = self.dlg.spin_LDisp.value()
             t_disp = self.dlg.spin_TDisp.value()
@@ -319,26 +324,52 @@ class MemoModel:
             angle_deg = self.dlg.spin_Angle.value()
             angle_rad = math.radians(angle_deg)
             cos_a, sin_a = math.cos(angle_rad), math.sin(angle_rad)
-            
-            # 動態讀取網格尺寸
             grid_spacing = self.dlg.spin_GridSize.value()
+            
+            # 【新增】進階參數：分子擴散與衰減常數 (包含向下相容防呆)
+            try:
+                d_star = self.dlg.spin_Dstar.value()
+                lambda_decay = self.dlg.spin_Lambda.value()
+            except AttributeError:
+                print("UI Warning: Advanced parameters not found in UI. Defaulting to 0.")
+                d_star = 0.0
+                lambda_decay = 0.0
+                
         except AttributeError as e:
-            # 防呆機制：如果找不到 spin_GridSize，就自動用 25 公尺，並印出提示
-            print(f"UI Warning: {e}. Defaulting grid size to 25m. / UI 讀取警告：將使用預設網格間距 25m。")
+            print(f"UI Warning: {e}. Defaulting grid size to 25m.")
             grid_spacing = 25.0
 
-        Dx = l_disp * v
-        Dy = t_disp * v
+        # 【物理引擎升級】計算總延散係數 (水動力延散 + 分子擴散)
+        Dx = (l_disp * v) + d_star
+        Dy = (t_disp * v) + d_star
+        
+        # 避免緻密黏土層流速為 0 導致除以零崩潰，給予極小值
+        v_safe = max(v, 1e-8)
+        Dx_safe = max(Dx, 1e-12)
 
-        # 3. Domenico 核心運算引擎
+        # 3. 升級版 Domenico 核心運算引擎 (包含一階衰減與完整延散)
         def domenico_concentration(x, y):
             if x <= 0: return 0.0 
             try:
-                term1 = math.erfc((x - v * t) / (2 * math.sqrt(Dx * t)))
-                term2 = math.erf((y + Y / 2) / (2 * math.sqrt(Dy * x / v)))
-                term3 = math.erf((y - Y / 2) / (2 * math.sqrt(Dy * x / v)))
+                # 計算衰減影響因子 Gamma
+                gamma = math.sqrt(1.0 + (4.0 * lambda_decay * Dx_safe) / (v_safe ** 2))
+                
+                # 計算穩態指數衰減項，並加上數學防溢位保護
+                exp_power = (x * v_safe / (2.0 * Dx_safe)) * (1.0 - gamma)
+                if exp_power < -700: 
+                    return 0.0
+                decay_factor = math.exp(exp_power)
+                
+                # 時間與距離項 (term1)
+                term1 = decay_factor * math.erfc((x - v_safe * t * gamma) / (2.0 * math.sqrt(Dx_safe * t)))
+                
+                # 橫向擴散項 (term2, term3)
+                term2 = math.erf((y + Y / 2.0) / (2.0 * math.sqrt(Dy * x / v_safe)))
+                term3 = math.erf((y - Y / 2.0) / (2.0 * math.sqrt(Dy * x / v_safe)))
+                
                 return 0.25 * term1 * (term2 - term3)
-            except: return 0.0
+            except: 
+                return 0.0
 
         # 4. 執行模擬運算
         half_grid = grid_spacing / 2.0  
@@ -356,35 +387,50 @@ class MemoModel:
                         total_points += 1
                         is_detected = False
                         for wp in well_points:
-                            if domenico_concentration((wp.x()-x_src)*cos_a + (wp.y()-y_src)*sin_a, 
-                                                    -(wp.x()-x_src)*sin_a + (wp.y()-y_src)*cos_a) >= C_dil:
+                            # 座標轉換至水流主軸系
+                            dist_x = (wp.x()-x_src)*cos_a + (wp.y()-y_src)*sin_a
+                            dist_y = -(wp.x()-x_src)*sin_a + (wp.y()-y_src)*cos_a
+                            
+                            if domenico_concentration(dist_x, dist_y) >= C_dil:
                                 is_detected = True; break
+                                
                         feat = QgsFeature(); feat.setGeometry(pt_geom)
                         if is_detected:
                             detected_count += 1; feat.setAttributes(["Detected"])
                         else:
                             feat.setAttributes(["Missed"])
-                            # 使用動態半徑畫盲區正方形
                             rect = QgsRectangle(x_src - half_grid, y_src - half_grid, x_src + half_grid, y_src + half_grid)
                             missed_polygons.append(QgsGeometry.fromRect(rect))
                         result_features.append(feat)
                     y_src += grid_spacing
                 x_src += grid_spacing
 
-        # 5. 生成暫存圖層並設定樣式
+       # 5. 生成暫存圖層並設定樣式
         if total_points > 0:
             efficiency = (detected_count / total_points) * 100
             crs_id = source_layer.crs().authid()
             layers_to_export = [] 
 
-            # 清除舊的暫存圖層
-            layer_names_to_remove = ["MEMO_流向箭頭", "MEMO_盲區範圍多邊形", "MEMO_網格點分析結果"]
-            for name in layer_names_to_remove:
-                for old_layer in QgsProject.instance().mapLayersByName(name):
-                    QgsProject.instance().removeMapLayer(old_layer)
+            # ==========================================
+            # 【升級】動態命名機制 (將流向角度加入圖層名稱)
+            # ==========================================
+            angle_str = f"{angle_deg:g}" # 自動去除多餘的小數點，例如 90.0 會變成 90
+            
+            arrow_layer_name = f"MEMO_流向箭頭_{angle_str}度"
+            blind_layer_name = f"MEMO_盲區範圍多邊形_{angle_str}度"
+            res_layer_name   = f"MEMO_網格點分析結果_{angle_str}度"
+
+            # 清除舊的暫存圖層 (改用前綴掃描，確保不同角度的舊圖層也會被清乾淨)
+            layers_to_remove = []
+            for lyr in QgsProject.instance().mapLayers().values():
+                if lyr.name().startswith("MEMO_流向箭頭") or \
+                   lyr.name().startswith("MEMO_盲區範圍多邊形") or \
+                   lyr.name().startswith("MEMO_網格點分析結果"):
+                    layers_to_remove.append(lyr.id())
+            if layers_to_remove:
+                QgsProject.instance().removeMapLayers(layers_to_remove)
 
             # A. 建立流向箭頭圖層
-            arrow_layer_name = "MEMO_流向箭頭"
             center_pt = source_layer.extent().center()
             center_feat = QgsFeature()
             center_feat.setGeometry(QgsGeometry.fromPointXY(center_pt))
@@ -400,7 +446,7 @@ class MemoModel:
             blind_layer = None
             blind_area_sqm = 0
             if missed_polygons:
-                blind_layer = QgsVectorLayer(f"Polygon?crs={crs_id}", "MEMO_盲區範圍多邊形", "memory")
+                blind_layer = QgsVectorLayer(f"Polygon?crs={crs_id}", blind_layer_name, "memory")
                 blind_pr = blind_layer.dataProvider()
                 blind_pr.addAttributes([QgsField("Area_sqm", QVariant.Double)])
                 blind_layer.updateFields()
@@ -413,7 +459,7 @@ class MemoModel:
                 layers_to_export.append(blind_layer)
 
             # C. 建立網格點
-            res_layer = QgsVectorLayer(f"Point?crs={crs_id}", "MEMO_網格點分析結果", "memory")
+            res_layer = QgsVectorLayer(f"Point?crs={crs_id}", res_layer_name, "memory")
             res_pr = res_layer.dataProvider()
             res_pr.addAttributes([QgsField("Status", QVariant.String)])
             res_layer.updateFields(); res_pr.addFeatures(result_features)
@@ -426,7 +472,6 @@ class MemoModel:
             layers_to_export.append(res_layer)
 
             # 6. 彈出演示視窗並詢問是否保存
-            # 雙語成功提示與參數報表對話框
             msg = f"模擬完成！ / Simulation Complete!\n\n" \
                   f"網格尺寸 / Grid Size: {grid_spacing}m x {grid_spacing}m\n" \
                   f"監測效率 / Monitoring Efficiency: {efficiency:.1f}%\n" \
@@ -455,7 +500,7 @@ class MemoModel:
                             qml_path = os.path.join(os.path.dirname(file_path), f"{lyr.name()}.qml")
                             lyr.saveNamedStyle(qml_path)
 
-                        # 產出雙語報告
+                        # 【升級】將進階參數寫入雙語報告中
                         report_path = os.path.splitext(file_path)[0] + "_Summary.txt"
                         with open(report_path, 'w', encoding='utf-8') as f:
                             f.write("=========================================================\n")
@@ -467,7 +512,9 @@ class MemoModel:
                             f.write(f"- 地下水流向角度 / Groundwater Flow Angle : {angle_deg} °\n")
                             f.write(f"- 縱向擴散係數 / Longitudinal Dispersivity (L_disp) : {l_disp} m\n")
                             f.write(f"- 橫向擴散係數 / Transverse Dispersivity (T_disp) : {t_disp} m\n")
-                            f.write(f"- 平均污染流速 / Average Contaminant Velocity (v) : {v} m/day\n")
+                            f.write(f"- 平均污染流速 / Average Velocity (v) : {v} m/day\n")
+                            f.write(f"- 分子擴散係數 / Mol. Diffusion (D*) : {d_star} m2/day\n")
+                            f.write(f"- 一階衰減常數 / Decay Rate (Lambda) : {lambda_decay} 1/day\n")
                             f.write(f"- 污染源寬度 / Source Width (Y) : {Y} m\n")
                             f.write(f"- 模擬時間 / Advection Time (t) : {t} days\n")
                             f.write(f"- 稀釋等高線標準 / Dilution Contour (C_dil) : {C_dil}\n\n")
@@ -478,7 +525,6 @@ class MemoModel:
                             f.write(f"- 監測效率 / Monitoring Efficiency : {efficiency:.1f} %\n")
                             f.write(f"- 盲區總面積 / Total Blind Area : {blind_area_sqm:,.1f} sq. meters\n")
 
-                        # 雙語匯出成功提示
                         success_msg = f"已成功保存 / Successfully saved:\n" \
                                       f"1. GPKG 空間資料庫 (Spatial Database)\n" \
                                       f"2. QML 樣式檔 (Style Files)\n" \
@@ -486,8 +532,6 @@ class MemoModel:
                                       f"檔案已存至 / Saved to:\n{os.path.dirname(file_path)}"
                         QMessageBox.information(self.dlg, "匯出完成 / Export Complete", success_msg)
                     except Exception as e:
-                        # 雙語匯出失敗提示
                         QMessageBox.critical(self.dlg, "匯出失敗 / Export Failed", f"發生不可預期的錯誤 / Unexpected error occurred:\n{e}")
         else:
-            # 雙語無效網格提示
             QMessageBox.warning(self.dlg, "無效的網格 / Invalid Grid", "未產生任何網格點，請檢查圖層與範圍！\nNo grid points generated. Please check layers and extents!")

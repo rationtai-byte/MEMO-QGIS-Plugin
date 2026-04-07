@@ -2,7 +2,7 @@
 name=MEMO Groundwater Network Design
 qgisMinimumVersion=3.0
 description=Evaluates groundwater monitoring well network efficiency based on the Domenico model. / 用於評估地下水監測井網路效率與視覺化盲區的專業套件。
-version=1.0
+version=1.1
 author=RayTai
 email=rationtai@gmail.com
 

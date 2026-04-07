@@ -8,47 +8,59 @@
 執行模擬前，請確保 QGIS 專案中已載入以下兩個必要圖層。
 ⚠️ 注意：所有圖層皆必須使用「投影座標系統」(Projected CRS) 且單位為「公尺(Meters)」。
 
-1. 污染源圖層 (Source Layer)
+1. 污染源區 (Source Area)
    - 格式：多邊形 (Polygon)。
    - 說明：代表潛在的污染洩漏區。系統會自動將此多邊形範圍作為運算的起始網格區。
 
-2. 監測井圖層 (Well Layer)
+2. 監測井 (Well Layer)
    - 格式：點 (Point)。
    - 說明：代表既有或規劃佈設的地下水監測井點位。
 
 【一、 空間與幾何參數】
-1. 網格間距 (Grid Size, m)
+1. 網格間距 Grid Size (m)
    - 意義：模型掃描盲點的精細度。
-   - 建議：大範圍初勘設 25-50m；單一廠房精算設 5-10m。
+   - 建議範圍：[ 1.0 ~ 1000.0 ]。大範圍初勘設 25-50m；單一廠房精算設 5-10m。
 
-2. 流向角度 (Flow Angle, °)
+2. 流向角度 Flow Angle (deg)
    - 意義：污染移動的絕對方向 (0°為正東方，90°為正北方)。
+   - 建議範圍：[ 0.0 ~ 360.0 ]。
 
-3. 污染源寬度 (Source Width Y, m)
+3. 污染源寬度 Source Width (Y, m)
    - 意義：垂直於地下水流向的污染源迎水面寬度。
+   - 建議範圍：[ 0.1 ~ 5000.0 ]。
 
 【二、 水文地質參數】
-1. 平均流速 (Velocity v, m/day)
+1. 平均流速 Velocity (v, m/day)
    - 意義：污染物在地下水體中實際移動的平均速度。
+   - 建議範圍：[ 0.0 ~ 100.0 ]。0 代表不流動之緻密黏土層。
 
-2. 縱向擴散 (Long. Disp. L_disp, m)
+2. 縱向擴散 Long. Disp. (L_disp, m)
    - 意義：污染物順水流方向的機械性混合長度。
-   - 建議：通常為「污染預期行進總長度的 10%」。
+   - 建議範圍：[ 0.0 ~ 2000.0 ]。通常設定為「預期行進總長度的 10%」。
 
-3. 橫向擴散 (Trans. Disp. T_disp, m)
+3. 橫向擴散 Trans. Disp. (T_disp, m)
    - 意義：污染物垂直於水流方向向兩側擴散的程度。
-   - 建議：通常設定為縱向擴散係數的 1/10。
+   - 建議範圍：[ 0.0 ~ 500.0 ]。通常設定為縱向擴散係數的 1/10。
+
+4. 分子擴散 Mol. Diffusion (D*, m2/day)
+   - 意義：污染物因濃度梯度產生的布朗運動擴散（極低流速下之主導力量）。
+   - 建議範圍：[ 0.0 ~ 0.01 ]。預設為 0，通常極小，僅黏土層需特別考量。
 
 【三、 時間與濃度條件】
-1. 模擬時間 (Time t, days)
+1. 模擬時間 Time (t, days)
    - 意義：假設污染發生洩漏後經過的天數。
+   - 建議範圍：[ 1.0 ~ 36500.0 ]。最大值約等於 100 年歷史回溯。
 
-2. 稀釋標準 (Dilution Limit C_dil)
+2. 一階衰減 Decay Rate (λ, 1/day)
+   - 意義：污染物因生物降解或化學反應之自然消退速率。
+   - 建議範圍：[ 0.0 ~ 10.0 ]。預設為 0 (最保守不衰減)；值越大代表降解越快。
+
+3. 稀釋標準 Dilution Limit (C_dil)
    - 意義：判定網格點「被成功偵測」的濃度比值邊界 (C/C0)。
-   - 建議：若源頭濃度 100 mg/L，法規標準 1 mg/L，則設為 0.01。
+   - 建議範圍：[ 0.000001 ~ 1.0 ]。若源頭濃度 100 mg/L，法規標準 1 mg/L，則設為 0.01。
 
-💡提示：
-建議將本套件定位為「Tier 1 篩測工具」。先快速抓出大面積廠區的警網漏洞，再針對紅色盲區規劃後續實體鑽井位置，提升調查經費效益！
+💡 提要：
+建議將本套件定位為「Tier 1 篩測工具」。先快速抓出大面積廠區的防守漏洞，再針對紅色盲區規劃後續實體鑽井，提升調查經費效益！
 
 
 =========================================================
@@ -61,7 +73,7 @@ This plugin utilizes the Domenico analytical transport equation to simulate the 
 Before running the simulation, ensure the following two necessary layers are loaded in your QGIS project.
 ⚠️ Note: All layers MUST use a Projected CRS with Meters as the unit.
 
-1. Source Layer
+1. Source Area
    - Format: Polygon.
    - Description: Represents the potential contaminant source area. The system will use this polygon's extent as the initial grid for computation.
 
@@ -72,33 +84,45 @@ Before running the simulation, ensure the following two necessary layers are loa
 [1. Spatial & Geometric Parameters]
 1. Grid Size (m)
    - Meaning: Resolution of the blind spot scanning.
-   - Suggestion: 25-50m for large-scale initial screening; 5-10m for specific site estimation.
+   - Range: [ 1.0 ~ 1000.0 ]. 25-50m for large-scale initial screening; 5-10m for specific sites.
 
-2. Flow Angle (°)
+2. Flow Angle (deg)
    - Meaning: Absolute direction of plume migration. 0° is East, 90° is North.
+   - Range: [ 0.0 ~ 360.0 ].
 
 3. Source Width (Y, m)
    - Meaning: Width of the source perpendicular to groundwater flow.
+   - Range: [ 0.1 ~ 5000.0 ].
 
 [2. Hydrogeological Parameters]
 1. Velocity (v, m/day)
    - Meaning: Average advection velocity of the contaminant.
+   - Range: [ 0.0 ~ 100.0 ]. 0 represents an impermeable clay layer.
 
 2. Long. Disp. (L_disp, m)
    - Meaning: Mechanical mixing length along the flow direction.
-   - Suggestion: Usually 10% of the expected plume travel distance.
+   - Range: [ 0.0 ~ 2000.0 ]. Usually 10% of the expected plume travel distance.
 
 3. Trans. Disp. (T_disp, m)
    - Meaning: Transverse spreading to the flow direction.
-   - Suggestion: Usually 1/10 of L_disp.
+   - Range: [ 0.0 ~ 500.0 ]. Usually 1/10 of L_disp.
+
+4. Mol. Diffusion (D*, m2/day)
+   - Meaning: Brownian motion diffusion due to concentration gradients (dominant in low-velocity scenarios).
+   - Range: [ 0.0 ~ 0.01 ]. Default is 0. Only critical for tight clay formations.
 
 [3. Time & Concentration Criteria]
 1. Time (t, days)
    - Meaning: Days elapsed since the continuous leak started.
+   - Range: [ 1.0 ~ 36500.0 ]. Max value is approx. 100 years.
 
-2. Dilution Limit (C_dil)
+2. Decay Rate (λ, 1/day)
+   - Meaning: First-order degradation rate of the contaminant.
+   - Range: [ 0.0 ~ 10.0 ]. Default is 0 (most conservative, no decay). Higher values mean faster degradation.
+
+3. Dilution Limit (C_dil)
    - Meaning: The concentration ratio boundary (C/C0) for a grid point to be considered "Detected".
-   - Suggestion: E.g., Source=100, Limit=1, set C_dil=0.01.
+   - Range: [ 0.000001 ~ 1.0 ]. E.g., Source=100, Limit=1, set C_dil=0.01.
 
 💡 Pro Tips:
 Use this plugin as a Tier 1 Screening Tool to quickly identify large-scale defense gaps before planning expensive physical drilling in the red blind spots.
